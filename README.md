@@ -29,3 +29,5 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - NextAuth for mock authentication
 - jose for jwt verification
 - tailwind for css
+- 3dicons for hero icons
+- Montserrat font
