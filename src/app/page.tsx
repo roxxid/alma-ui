@@ -13,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { useState } from "react";
 
-export const immigrationFormSchema = z.object({
+const immigrationFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
@@ -24,7 +24,7 @@ export const immigrationFormSchema = z.object({
   helpText: z.string().min(4, "Please provide more details"),
 });
 
-export type ImmigrationFormSchema = z.infer<typeof immigrationFormSchema>;
+type ImmigrationFormSchema = z.infer<typeof immigrationFormSchema>;
 
 export default function ImmigrationForm() {
 
