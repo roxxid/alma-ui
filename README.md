@@ -21,4 +21,11 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-
+## Libraries used
+- shadcn for UI elements styling
+- radix-ui for react UI elements
+- react-hook-forms for forms
+- zod for validations and type safety
+- NextAuth for mock authentication
+- jose for jwt verification
+- tailwind for css
