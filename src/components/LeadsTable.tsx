@@ -11,6 +11,7 @@ import { filterCountries } from "@/lib/helpers";
 //@ts-ignore
 import countryRegionData from "country-region-data/dist/data-umd";
 import { CountryRegion } from "./ui/country-select";
+import "../mock/api/mockApi";
 
 type Lead = {
   name: string;
@@ -23,57 +24,6 @@ type Option = {
   label: string;
   value: string;
 };
-
-const defaultData: Lead[] = [
-  {
-      "name": "Jorge Ruiz",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Pending",
-      "country": "Mexico"
-  },
-  {
-      "name": "Bahar Zamir",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Pending",
-      "country": "Mexico"
-  },
-  {
-      "name": "Mary Lopez",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Pending",
-      "country": "Brazil"
-  },
-  {
-      "name": "Li Zijin",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Pending",
-      "country": "South Korea"
-  },
-  {
-      "name": "Mark Antonov",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Pending",
-      "country": "Russia"
-  },
-  {
-      "name": "Jane Ma",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Pending",
-      "country": "Mexico"
-  },
-  {
-      "name": "Anand Jain",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Reached Out",
-      "country": "Mexico"
-  },
-  {
-      "name": "Anna Voronova",
-      "submitted": "02/02/2024, 2:45 PM",
-      "status": "Pending",
-      "country": "France"
-  }
-];
 
 const TableCell = ({ getValue, row, column, table }: any) => {
   const initialValue = getValue();
@@ -110,52 +60,30 @@ const TableCell = ({ getValue, row, column, table }: any) => {
   return <span>{value}</span>;
 };
 
-const EditCell = ({ row, table }: any) => {
-  const meta = table.options.meta;
-  const setEditedRows = (e: MouseEvent<HTMLButtonElement>) => {
-    const elName = e.currentTarget.name;
-    meta?.setEditedRows((old: any) => ({
-      ...old,
-      [row.id]: !old[row.id],
-    }));
-    if (elName !== "edit") {
-      meta?.revertData(row.index, e.currentTarget.name === "cancel");
-    }
-  };
-  return (
-    <div className="edit-cell-container">
-      {meta?.editedRows[row.id] ? (
-        <div className="edit-cell">
-          <button onClick={setEditedRows} name="cancel">
-            <X size="14" className="mr-2"></X>
-          </button>
-          <button onClick={setEditedRows} name="done">
-            <Check size="14"></Check>
-          </button>
-        </div>
-      ) : (
-        <button onClick={setEditedRows} name="edit">
-          <Edit size="14"></Edit>
-        </button>
-      )}
-    </div>
-  );
-};
-
 const columnHelper = createColumnHelper<Lead>();
 
 export const LeadsTable = () => {
-  const [data, setData] = useState(() => [...defaultData]);
-  const [originalData, setOriginalData] = useState(() => [...defaultData]);
+  const [data, setData] = useState(() => []);
+  // const [originalData, setOriginalData] = useState(() => [...defaultData]);
   const [editedRows, setEditedRows] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
 
   const [countries, setCountries] = useState<CountryRegion[]>([]);
 
+  const fetchData = async () => {
+    const response = await fetch('/api/leads');
+    const result = await response.json();
+    setData(result);
+  };
+
   useEffect(() => {
-      setCountries(
-          filterCountries(countryRegionData, [], [], []),
-      );
+    setCountries(
+      filterCountries(countryRegionData, [], [], []),
+    );
+  }, []);
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -164,15 +92,67 @@ export const LeadsTable = () => {
 
   useEffect(() => {
     if (!searchQuery) {
-      setData(originalData);
+      setData(data);
       return;
     }
 
-    const filteredData = defaultData.filter((student) =>
+    const filteredData = data.filter((student) =>
       student.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setData(filteredData);
   }, [searchQuery]);
+
+  const EditCell = ({ row, table }: any) => {
+    const meta = table.options.meta;
+    const setEditedRows = async (e: MouseEvent<HTMLButtonElement>) => {
+      const elName = e.currentTarget.name;
+      meta?.setEditedRows((old: any) => ({
+        ...old,
+        [row.id]: !old[row.id],
+      }));
+  
+      if (elName === "done" && Object.keys(meta.editedRows).length > 0) {
+        const response = await fetch(`/api/leads/${row.original.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(row.original),
+        });
+    
+        if (!response.ok) {
+          throw new Error("Failed to update lead");
+        }
+        if (response.ok) {
+          fetchData();
+          const responseString = JSON.stringify(response, null, 2); 
+          alert(responseString);
+        }
+      }
+  
+      if (elName !== "edit") {
+        meta?.revertData(row.index, e.currentTarget?.name === "cancel");
+      }
+    };
+    return (
+      <div className="edit-cell-container">
+        {meta?.editedRows[row.id] ? (
+          <div className="edit-cell">
+            <button onClick={setEditedRows} name="cancel">
+              <X size="14" className="mr-2"></X>
+            </button>
+            <button onClick={setEditedRows} name="done">
+              <Check size="14"></Check>
+            </button>
+          </div>
+        ) : (
+          <button onClick={setEditedRows} name="edit">
+            <Edit size="14"></Edit>
+          </button>
+        )}
+      </div>
+    );
+  };
 
   const columns = [
     columnHelper.accessor("name", {
@@ -184,16 +164,17 @@ export const LeadsTable = () => {
     }),
     columnHelper.accessor("submitted", {
       header: "Submitted",
-      cell: TableCell,
+      cell: (info) => <span>{new Date(info.getValue()).toLocaleString()}</span>, // Format as needed
       meta: {
         type: "date",
       },
     }),
     columnHelper.accessor("status", {
-      header: "Date Of Birth",
+      header: "Status",
       cell: TableCell,
       meta: {
-        type: "string",
+        type: "select",
+        options: [{ value: 'Pending', label: 'Pending' }, { value: 'Reached Out', label: 'Reached Out' },],
       },
     }),
     columnHelper.accessor("country", {
@@ -201,7 +182,7 @@ export const LeadsTable = () => {
       cell: TableCell,
       meta: {
         type: "select",
-        options: countries.map(({ countryName, countryShortCode }) => ( { value: countryName, label: countryName } )),
+        options: countries.map(({ countryName, countryShortCode }) => ({ value: countryName, label: countryName })),
       },
     }),
     columnHelper.display({
@@ -221,11 +202,11 @@ export const LeadsTable = () => {
         if (revert) {
           setData((old) =>
             old.map((row, index) =>
-              index === rowIndex ? originalData[rowIndex] : row
+              index === rowIndex ? data[rowIndex] : row
             )
           );
         } else {
-          setOriginalData((old) =>
+          setData((old) =>
             old.map((row, index) => (index === rowIndex ? data[rowIndex] : row))
           );
         }
@@ -257,7 +238,7 @@ export const LeadsTable = () => {
           onChange={handleSearchChange}
         />
       </div>
-      <table className="w-full border-collapse border outline outline-1 outline-gray-200 overflow-hidden text-left rounded-lg mt-4">
+      {data.length ? <table className="w-full border-collapse border outline outline-1 outline-gray-200 overflow-hidden text-left rounded-lg mt-4">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b">
@@ -285,7 +266,21 @@ export const LeadsTable = () => {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table> :
+        <div className="animate-pulse space-y-6 p-4 border rounded-md mt-4">
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-full"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-full"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-full"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-full"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-5/6"></div>
+        </div>}
     </>
   );
 };

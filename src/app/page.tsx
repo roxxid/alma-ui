@@ -26,7 +26,7 @@ const immigrationFormSchema = z.object({
 
 type ImmigrationFormSchema = z.infer<typeof immigrationFormSchema>;
 
-export default function ImmigrationForm() {
+export default function ImmigrationForm() {  
 
   const [formSubmitted, setFormSubmitted] = useState(false);
 

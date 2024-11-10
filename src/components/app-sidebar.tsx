@@ -40,7 +40,7 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupLabel>
                         <div className="mt-10">
-                            <Image className="" src="/alma_logo.png" width={100} height={100} alt="Logo" />
+                            <Image className="w-auto h-auto" src="/alma_logo.png" width={100} height={100} alt="Logo" priority />
                         </div>
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
